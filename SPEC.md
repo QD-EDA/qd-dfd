@@ -41,3 +41,17 @@ replayed cover witnesses for Idle-to-PostTrans and Idle-to-invalid encoding,
 and separately detect forced grants and suppressed clear in QD-only harnesses.
 This removes the Idle-only assumption; it does not establish legal lifecycle
 transition reachability, downstream retained-debug clearing or four-state safety.
+
+## Retained DMI permission cone
+
+Resolve pinned OpenTitan RV_DM with explicit generic and Earlgrey mappings.
+Instantiate the unchanged rv_dm_dmi_gate, normal production strap mode, and
+real synchronizers. Compare its strict DMI permission against a separate Boolean
+reference with two input sampling stages and a retained permission bit. Check
+ten reset-initialized steps with arbitrary binary lifecycle control encodings
+and strap values. Cover retention after live enable drops and invalid-encoding
+revocation by debug-clear, bypass and escalation individually; detect a QD-only
+forced grant. Attempt independent witness replay without suppressing diagnostics.
+A recognized blocked replay remains UNKNOWN with exit 2, never a passing proof
+bundle. Preserve all old CLI behavior and tests. No TL-UL transaction or complete
+debug-path claim follows from this selected control cone.
