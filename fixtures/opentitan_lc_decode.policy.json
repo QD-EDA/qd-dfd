@@ -1,0 +1,40 @@
+{
+  "signals": {"reset": "opentitan_lc_decode.rst_n", "lock": "opentitan_lc_decode.lc", "request": "opentitan_lc_decode.request", "grant": "opentitan_lc_decode.grant"},
+  "widths": {"lock": 4},
+  "required": [
+    {"when": {"reset": "1", "request": "1", "lock": "0000", "grant": "0"}},
+    {"when": {"reset": "1", "request": "1", "lock": "0001", "grant": "0"}},
+    {"when": {"reset": "1", "request": "1", "lock": "0010", "grant": "0"}},
+    {"when": {"reset": "1", "request": "1", "lock": "0011", "grant": "0"}},
+    {"when": {"reset": "1", "request": "1", "lock": "0100", "grant": "0"}},
+    {"when": {"reset": "1", "request": "1", "lock": "0101", "grant": "1"}},
+    {"when": {"reset": "1", "request": "1", "lock": "0110", "grant": "0"}},
+    {"when": {"reset": "1", "request": "1", "lock": "0111", "grant": "0"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1000", "grant": "0"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1001", "grant": "0"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1010", "grant": "0"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1011", "grant": "0"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1100", "grant": "0"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1101", "grant": "0"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1110", "grant": "0"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1111", "grant": "0"}}
+  ],
+  "forbidden": [
+    {"when": {"reset": "1", "request": "1", "lock": "0000", "grant": "1"}},
+    {"when": {"reset": "1", "request": "1", "lock": "0001", "grant": "1"}},
+    {"when": {"reset": "1", "request": "1", "lock": "0010", "grant": "1"}},
+    {"when": {"reset": "1", "request": "1", "lock": "0011", "grant": "1"}},
+    {"when": {"reset": "1", "request": "1", "lock": "0100", "grant": "1"}},
+    {"when": {"reset": "1", "request": "1", "lock": "0101", "grant": "0"}},
+    {"when": {"reset": "1", "request": "1", "lock": "0110", "grant": "1"}},
+    {"when": {"reset": "1", "request": "1", "lock": "0111", "grant": "1"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1000", "grant": "1"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1001", "grant": "1"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1010", "grant": "1"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1011", "grant": "1"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1100", "grant": "1"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1101", "grant": "1"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1110", "grant": "1"}},
+    {"when": {"reset": "1", "request": "1", "lock": "1111", "grant": "1"}}
+  ]
+}

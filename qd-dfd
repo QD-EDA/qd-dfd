@@ -20,6 +20,18 @@ def load_policy(path):
         raise ValueError("policy signals must name reset, lock, request, and grant")
     if any(not isinstance(v, str) or not v for v in signals.values()):
         raise ValueError("signal paths must be non-empty strings")
+    widths = policy.get("widths", {})
+    if not isinstance(widths, dict) or set(widths) - signals.keys():
+        raise ValueError("widths must map named signal roles to widths")
+    if any(type(v) is not int or not 1 <= v <= 4096 for v in widths.values()):
+        raise ValueError("signal widths must be integers from 1 through 4096")
+    policy["widths"] = {role: widths.get(role, 1) for role in signals}
+    by_path = {}
+    for role, name in signals.items():
+        width = policy["widths"][role]
+        if name in by_path and by_path[name] != width:
+            raise ValueError(f"conflicting policy widths for {name}")
+        by_path[name] = width
     for key in ("forbidden", "required"):
         clauses = policy.get(key)
         if not isinstance(clauses, list) or not clauses:
@@ -29,8 +41,9 @@ def load_policy(path):
                 raise ValueError(f"{key}[{i}] must contain a non-empty when object")
             if set(clause["when"]) - signals.keys():
                 raise ValueError(f"{key}[{i}] uses an unnamed signal role")
-            if any(v not in ("0", "1") for v in clause["when"].values()):
-                raise ValueError(f"{key}[{i}] expected values must be 0 or 1")
+            if any(not isinstance(v, str) or not re.fullmatch("[01]+", v) or
+                   len(v) != policy["widths"][role] for role, v in clause["when"].items()):
+                raise ValueError(f"{key}[{i}] expected values must be 0 or 1 bit strings matching declared widths")
     return policy
 
 
@@ -38,6 +51,7 @@ def read_vcd(path, selected):
     """Return exact hierarchical declarations and final snapshots per timestamp."""
     tokens = iter(Path(path).read_text(errors="replace").split())
     scopes, declarations, updates = [], {}, []
+    code_widths = {}
     wanted = set(selected)
     last_time, saw_time = 0, False
 
@@ -54,7 +68,7 @@ def read_vcd(path, selected):
         raise ValueError("unterminated VCD directive")
 
     def snapshots():
-        current = {name: "x" for name in selected}
+        current = {name: "x" * width for name, width in selected.items()}
         # VCD identifiers can alias multiple hierarchical declarations.
         codes = {code: [name for name in selected if declarations.get(name) == code]
                  for code in set(declarations.values())}
@@ -98,8 +112,11 @@ def read_vcd(path, selected):
             end_directive()
             name = ".".join(scopes + [ref])
             if name in wanted:
-                if width != 1:
-                    raise ValueError(f"selected signal {name} has width {width}; only scalar signals are supported")
+                if width != selected[name]:
+                    raise ValueError(f"selected signal {name} has width {width}; policy requires {selected[name]}")
+                if code in code_widths and code_widths[code] != width:
+                    raise ValueError(f"inconsistent VCD alias width for {name}")
+                code_widths[code] = width
                 if name in declarations:
                     raise ValueError(f"duplicate VCD declaration for {name}")
                 declarations[name] = code
@@ -118,7 +135,9 @@ def read_vcd(path, selected):
                 end_directive()
         elif token[0] in "01xXzZ":
             value, code = token[0].lower(), token[1:]
-            if code in declarations.values():
+            if code in code_widths:
+                if code_widths[code] != 1:
+                    raise ValueError(f"scalar VCD update for vector identifier {code}")
                 updates.append(("value", code, value))
         elif token[0] in "bB":
             bits, code = token[1:].lower(), take()
@@ -126,14 +145,16 @@ def read_vcd(path, selected):
                 continue
             if not VALUE.fullmatch(bits):
                 raise ValueError(f"unsupported VCD value {token}")
-            if len(bits) != 1:
-                raise ValueError("selected signals must be scalar; vector VCD values are unsupported")
-            updates.append(("value", code, bits))
+            if len(bits) > code_widths[code]:
+                raise ValueError(f"VCD value exceeds declared width for identifier {code}")
+            # VCD omits leading zeroes, or repeated leading X/Z bits.
+            fill = bits[0] if bits[0] in "xz" else "0"
+            updates.append(("value", code, bits.rjust(code_widths[code], fill)))
         elif token and token[0] in "rRhH":
             # Real/hex values cannot represent the required four-state boolean inputs.
             code = next(tokens, "")
             if code in declarations.values():
-                raise ValueError("selected signals must use scalar 0/1/X/Z values")
+                raise ValueError("selected signals must use binary 0/1/X/Z values")
 
     missing = sorted(wanted - declarations.keys())
     if missing:
@@ -145,17 +166,17 @@ def read_vcd(path, selected):
 
 def check(vcd_path, policy):
     signals = policy["signals"]
-    snapshots = read_vcd(vcd_path, signals.values())
+    snapshots = read_vcd(vcd_path, {name: policy.get("widths", {}).get(role, 1) for role, name in signals.items()})
     diagnostics, exercised = [], [False] * len(policy["required"])
 
     def evaluate(clause, values, timestamp, label):
         unknown = []
         for role, expected in clause["when"].items():
             actual = values[signals[role]]
-            if actual in "xz":
-                unknown.append((signals[role], actual))
-            elif actual != expected:
+            if any(bit in "01" and bit != want for bit, want in zip(actual, expected)):
                 return False
+            if "x" in actual or "z" in actual:
+                unknown.append((signals[role], actual))
         if unknown:
             rendered = ", ".join(f"{name}={value.upper()}" for name, value in unknown)
             diagnostics.append({"timestamp": timestamp, "kind": "unknown", "message": f"{label}: decisive value unknown ({rendered})", "signals": values.copy()})
