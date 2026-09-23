@@ -31,3 +31,13 @@ non-vacuous On/Off witness, a QD-only grant-fault counterexample, simulation
 replay of both witnesses and rejection of a corrupted replay expectation.
 Preserve the VCD CLI and application RTL. See LIFECYCLE_FORMAL_EVIDENCE.md for
 model limits, including unavailable upstream assertions and two-state semantics.
+
+## Debug FSM boundaries
+
+Extend the selected DEV/PROD/PROD_END cone to unconstrained binary 16-bit FSM
+inputs and check registered debug-clear alongside debug-enable. After initial
+reset, compare against the one-cycle reference for all six steps. Require
+replayed cover witnesses for Idle-to-PostTrans and Idle-to-invalid encoding,
+and separately detect forced grants and suppressed clear in QD-only harnesses.
+This removes the Idle-only assumption; it does not establish legal lifecycle
+transition reachability, downstream retained-debug clearing or four-state safety.
