@@ -1,57 +1,37 @@
 # QD-DFD
 
-QD-DFD checks observed debug-lock behavior in a VCD trace. It is a trace policy
-checker, not a proof of all reachable states or a replacement for secure debug
-signoff. A passing trace only means that this trace met the selected policy.
+`qd-dfd` checks debug-lock policy against values observed in a VCD trace. It checks the supplied trace only; it cannot prove all reachable states or replace secure-debug signoff. A pass means only that the trace exercised the required policy clauses without observing a forbidden one.
 
-## Run
+## Requirements and quick start
+
+Python 3 is required. This self-contained example writes a policy and a tiny trace, then checks them:
 
 ```sh
-./qd-dfd check trace.vcd --policy policy.json
-./qd-dfd check trace.vcd --policy policy.json --json
+tmp=$(mktemp -d)
+cat > "$tmp/policy.json" <<'EOF'
+{"signals":{"reset":"tb.rst_n","lock":"tb.locked","request":"tb.dbg_req","grant":"tb.dbg_grant"},"forbidden":[{"when":{"reset":"1","lock":"1","grant":"1"}}],"required":[{"when":{"reset":"1","lock":"1","request":"1","grant":"0"}},{"when":{"reset":"1","lock":"0","grant":"1"}}]}
+EOF
+cat > "$tmp/trace.vcd" <<'EOF'
+$scope module tb $end
+$var wire 1 ! rst_n $end
+$var wire 1 " locked $end
+$var wire 1 # dbg_req $end
+$var wire 1 $ dbg_grant $end
+$upscope $end
+$enddefinitions $end
+#0
+0! 0" 0# 0$
+#5
+1! 1" 1# 0$
+#10
+0" 0# 1$
+EOF
+./qd-dfd check "$tmp/trace.vcd" --policy "$tmp/policy.json" --json
 python3 -m unittest -v
 ```
 
-The checker uses only Python's standard library. It returns 0 for a passing
-trace and 1 for policy violations or invalid inputs.
+Policy signal paths are exact, case-sensitive, scalar VCD hierarchy names. `reset`, `lock`, `request`, and `grant` are required roles; additional roles such as lifecycle state may be named and referenced by clauses. `forbidden` and `required` are non-empty lists of clauses with expected one-bit values `0` or `1`. Each required clause must match at least one sampled timestamp. Any forbidden match, missing signal, decisive X/Z value, malformed input, or unexercised required clause fails the check. Unknown values are errors only when the other known clause fields still allow it to match.
 
-## Policy
+Updates sharing a timestamp are applied in file order and checked once after the final update at that time; intermediate delta ordering is not modeled. Reported timestamps use raw VCD time units. Text output prints PASS/FAIL findings; `--json` prints `passed` and a deterministic diagnostics array with timestamps and observed signal values.
 
-Paths are exact, case-sensitive VCD hierarchy names. `grant` may name a grant
-signal or the effective debug enable. Optional roles such as `lifecycle` can
-be added and referenced by clauses. Clause expectations are one-bit `0` or
-`1`; an observed `X` or `Z` at a decisive check is an error.
-
-```json
-{
-  "signals": {
-    "reset": "tb.rst_n",
-    "lock": "tb.debug_locked",
-    "request": "tb.debug_request",
-    "grant": "tb.debug_grant",
-    "lifecycle": "tb.lc_state"
-  },
-  "forbidden": [
-    {"when": {"reset": "1", "lock": "1", "grant": "1"}}
-  ],
-  "required": [
-    {"when": {"reset": "1", "lock": "1", "request": "1", "grant": "0"}},
-    {"when": {"reset": "1", "lock": "0", "grant": "1"}}
-  ]
-}
-```
-
-Each required clause must match at least one sampled timestamp. An unknown
-value is an error when the other known fields still allow the clause to match.
-VCD updates sharing a timestamp are applied in file order and checked once,
-after the final update at that timestamp; intermediate delta ordering is not
-treated as a separate hardware cycle. Timestamps are reported in the raw VCD
-time units.
-
-## Verilator traces
-
-For a pinned Caliptra checkout, use its existing simulation sources and
-testbench without editing the release. Compile the testbench with Verilator
-tracing enabled (commonly `--trace`) and have the harness call `$dumpfile` and
-`$dumpvars` to write the VCD. Then copy the exact hierarchy names from that VCD
-into the policy. Harness and top-module commands vary by release and testbench.
+Exit codes: `0` for a passing trace; `1` for policy violations, malformed/missing VCD or policy input; `2` for command-line usage errors. To use a Verilator trace, compile the existing design/testbench with tracing enabled (commonly `--trace`) and have its harness call `$dumpfile` and `$dumpvars`; copy exact hierarchy paths from that VCD into the policy. Harness commands vary by project and release. Generating a trace does not expand this check into exhaustive verification.
