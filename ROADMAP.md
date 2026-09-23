@@ -4,6 +4,17 @@
 
 QD-DFD will both analyze hardware debug architecture and implement design-for-debug by inserting the necessary design elements into RTL or netlists for an explicitly supported scope. Debug access, observation/trace, registers and lifecycle controls are design outputs, alongside structural and reachable-state verification. The current executable only checks observed VCD policy; insertion is not implemented today.
 
+## Commercial replacement objective
+
+QD-DFD targets commercial-class hardware design-for-debug analysis and insertion,
+including the depth and usability expected of SpyGlass-style static analysis.
+Define replacement by a published capability matrix for architecture checks,
+endpoint coverage, register/access visibility, lifecycle locks, test modes,
+trigger/trace logic and generated debug infrastructure. Do not imply that one
+SpyGlass product supplies this entire DFD scope. Structural/reachability checks
+and design-generation correctness both require qualification; a VCD checker or
+one inserted observation block cannot complete the product goal.
+
 ## Current capability
 
 Baseline `28883fb7413e3e02452429d34b5c913fbb45bd3b`: seven Python tests;
