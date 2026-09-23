@@ -90,6 +90,12 @@ from the VCD CLI and does not establish full lifecycle reachability or signoff.
 The expanded FSM property and exact limits are documented in
 [FSM boundary evidence](FSM_BOUNDARY_EVIDENCE.md).
 
+`python3 run_opentitan_debug_endpoints.py ROOT REPORT.json` inventories the
+pinned Earlgrey direct connections from `lc_hw_debug_en` and `lc_hw_debug_clr`
+to selected consumer ports. Missing or newly added wiring remains UNKNOWN.
+See [endpoint evidence](DEBUG_ENDPOINT_EVIDENCE.md); this is source inventory,
+not hierarchy elaboration or an architecture proof.
+
 ## Retained DMI permission pilot
 
 `python3 run_opentitan_dmi_formal.py OPENTITAN_ROOT NEW_EVIDENCE_DIR` resolves
