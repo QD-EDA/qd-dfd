@@ -89,3 +89,13 @@ from the VCD CLI and does not establish full lifecycle reachability or signoff.
 
 The expanded FSM property and exact limits are documented in
 [FSM boundary evidence](FSM_BOUNDARY_EVIDENCE.md).
+
+## Retained DMI permission pilot
+
+`python3 run_opentitan_dmi_formal.py OPENTITAN_ROOT NEW_EVIDENCE_DIR` resolves
+the real RV_DM generic dependency set with FuseSoC 2.4.5 / Edalize 0.6.3 and checks
+ten steps of its retained DMI permission. It needs PyYAML, Yosys with read_slang,
+and Verilator. The observed Verilator UNOPTFLAT failure blocks witness replay:
+this pilot returns 2 (UNKNOWN), preserving the diagnostic. Other errors return
+1; zero would mean all scoped checks and replays completed, not qualification.
+See [DMI evidence](DMI_PERMISSION_EVIDENCE.md) for commands, scope and blockers.
