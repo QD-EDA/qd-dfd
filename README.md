@@ -70,8 +70,19 @@ compiles the real packages, checks the function's truth table, generates VCD,
 and requires rejection of a QD-harness grant fault. The legacy `lock` role names
 the encoded input in this fixture; it is not a claim about a real lock register.
 [Evidence](VECTOR_EVIDENCE.md) records versions and limits. Default CI covers
-Python regressions; it does not run the optional simulator pilot. Reachable-state
+Python regressions; it does not run the optional simulator pilot. Full lifecycle reachable-state
 proof, debug-structure insertion and full-chip qualification remain roadmap work.
 
 See [the staged qualification roadmap](ROADMAP.md) for named pilots, unsupported
 cases, independent oracles, performance targets and release gates.
+
+## Optional hardware bounded proof
+
+`python3 run_opentitan_debug_formal.py /path/to/clean/opentitan /tmp/qd-dfd-formal`
+checks six steps of the real OpenTitan lifecycle decoder's registered hardware
+debug-enable output, with DEV/PROD/PROD_END inputs and the FSM held at IdleSt.
+It requires Yosys with `read_slang` and Verilator, covers both On and Off, rejects
+an injected grant, and independently replays SAT witnesses. See
+[LIFECYCLE_FORMAL_EVIDENCE.md](LIFECYCLE_FORMAL_EVIDENCE.md) for the pinned design,
+commands, assumptions and unsupported cases. This optional pilot is separate
+from the VCD CLI and does not establish full lifecycle reachability or signoff.
