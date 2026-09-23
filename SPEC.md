@@ -21,3 +21,13 @@ partial unknowns bitwise. Preserve scalar policy behavior and final-value-per-
 timestamp sampling. Validate a pinned OpenTitan strict lifecycle decode function
 with all 16 inputs, independent expected truth table and a QD-only injected fault.
 Do not claim full lifecycle/debug access verification from the function trace.
+
+## Selected hardware-cone bounded pilot
+
+The optional OpenTitan pilot checks six sequential steps of the real registered
+hardware-debug enable for freely selected DEV/PROD/PROD_END states, arbitrary
+binary validity/secrets inputs, IdleSt FSM and an initial reset. Require a
+non-vacuous On/Off witness, a QD-only grant-fault counterexample, simulation
+replay of both witnesses and rejection of a corrupted replay expectation.
+Preserve the VCD CLI and application RTL. See LIFECYCLE_FORMAL_EVIDENCE.md for
+model limits, including unavailable upstream assertions and two-state semantics.
