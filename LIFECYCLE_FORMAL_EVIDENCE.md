@@ -81,3 +81,8 @@ and release evidence remain required by the roadmap.
 One local run measured 0.085 s for the bounded proof, 0.087 s for cover and
 0.044 s for the fault query; each replay build took about 2.72 s and each
 successful replay about 0.03 s. Peak memory was not measured by the runner.
+
+A fresh local clone of commit `acf9731` repeated all three SAT outcomes, both
+successful witness replays, the corrupted-expectation rejection, and all 14
+Python regressions. This checks workspace independence on the same host and
+installed tools; it is not an independent toolchain rebuild.
