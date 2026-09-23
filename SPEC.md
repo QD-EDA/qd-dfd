@@ -1,3 +1,9 @@
+# Product scope
+
+QD-DFD will both analyze hardware debug architecture and implement design-for-debug by inserting the necessary design elements into RTL or netlists for an explicitly supported scope. Debug access, observation/trace, registers and lifecycle controls are design outputs, alongside structural and reachable-state verification. The current executable only checks observed VCD policy; insertion is not implemented today.
+
+The historical v0 specification below describes the existing prototype, not a limit on the intended product. The staged implementation and qualification contract is in ROADMAP.md.
+
 # QD-DFD v0 scope
 
 Build an executable design-for-debug policy checker for VCD traces. Target Caliptra-style debug/JTAG lock behavior without modifying released RTL. This validates observed traces only; it does not prove all states or replace secure debug signoff.

@@ -1,5 +1,11 @@
 # QD-DFD
 
+## Product direction
+
+QD-DFD will both analyze hardware debug architecture and implement design-for-debug by inserting the necessary design elements into RTL or netlists for an explicitly supported scope. Debug access, observation/trace, registers and lifecycle controls are design outputs, alongside structural and reachable-state verification. The current executable only checks observed VCD policy; insertion is not implemented today.
+
+## Current prototype
+
 `qd-dfd` checks debug-lock policy against values observed in a VCD trace. It checks the supplied trace only; it cannot prove all reachable states or replace secure-debug signoff. A pass means only that the trace exercised the required policy clauses without observing a forbidden one.
 
 ## Requirements and quick start
@@ -35,3 +41,6 @@ Policy signal paths are exact, case-sensitive, scalar VCD hierarchy names. `rese
 Updates sharing a timestamp are applied in file order and checked once after the final update at that time; intermediate delta ordering is not modeled. Reported timestamps use raw VCD time units. Text output prints PASS/FAIL findings; `--json` prints `passed` and a deterministic diagnostics array with timestamps and observed signal values.
 
 Exit codes: `0` for a passing trace; `1` for policy violations, malformed/missing VCD or policy input; `2` for command-line usage errors. To use a Verilator trace, compile the existing design/testbench with tracing enabled (commonly `--trace`) and have its harness call `$dumpfile` and `$dumpvars`; copy exact hierarchy paths from that VCD into the policy. Harness commands vary by project and release. Generating a trace does not expand this check into exhaustive verification.
+
+See [the staged qualification roadmap](ROADMAP.md) for named pilots, unsupported
+cases, independent oracles, performance targets and release gates.
