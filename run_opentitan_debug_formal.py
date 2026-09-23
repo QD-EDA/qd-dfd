@@ -46,33 +46,38 @@ def main():
             if not re.fullmatch(r'[A-Za-z0-9_./:+-]+',s):
                 raise ValueError('pilot tool paths require letters, digits, _ . / : + -')
             return s
-        for mode in ('proof','cover','fault'):
-            read='read_slang --top opentitan_debug_formal '+('-G BAD_GRANT=1 ' if mode=='fault' else '')
+        for mode in ('proof','cover','invalid-cover','fault','clear-fault'):
+            read='read_slang --top opentitan_debug_formal '+('-G BAD_GRANT=1 ' if mode=='fault' else '-G BAD_CLEAR=1 ' if mode=='clear-fault' else '')
             read+='-I'+quote(include)+' '+' '.join(map(quote,files))+'\n'
             script=read+'prep -top opentitan_debug_formal -flatten\nasync2sync\ndffunmap\ncheck -assert\n'
             script+='sat -seq 6 -set rst_ni 1 -set-at 1 rst_ni 0 -show-inputs -show-outputs '
-            if mode=='cover': script+='-set-at 4 observed_debug 5 -set-at 5 observed_debug 10 '
+            if mode in ('cover','invalid-cover'):
+                # Pinned lc_ctrl_pkg: IdleSt=0x07ad, PostTransSt=0x6d2c; zero is invalid.
+                script+='-set-at 3 fsm 1965 -set-at 4 fsm '+str(27948 if mode=='cover' else 0)+' '
+                script+='-set-at 4 observed_debug 5 -set-at 5 observed_debug 10 -set-at 5 observed_clear 5 '
             else: script+='-prove bad 0 '+('-verify ' if mode=='proof' else '')
             if mode!='proof': script+='-dump_json '+quote(out/(mode+'.json'))
             path=out/(mode+'.ys');path.write_text(script+'\n')
             log=run(mode,['yosys','-Q','-s',str(path)])
             expected={'proof':'SAT proof finished - no model found: SUCCESS!',
                       'fault':'SAT proof finished - model found: FAIL!',
-                      'cover':'SAT solving finished - model found:'}[mode]
+                      'clear-fault':'SAT proof finished - model found: FAIL!',
+                      'cover':'SAT solving finished - model found:',
+                      'invalid-cover':'SAT solving finished - model found:'}[mode]
             if expected not in log: raise ValueError(mode+': missing solver outcome')
             if mode=='proof': continue
             signals=json.loads((out/(mode+'.json')).read_text())['signal']
             values={}
             for signal in signals:
-                if signal['name'] not in ('rst_ni','state_valid','dev','prod_end','secrets','observed_debug','bad'): continue
+                if signal['name'] not in ('rst_ni','state_valid','dev','prod_end','secrets','fsm','observed_debug','observed_clear','bad'): continue
                 data=iter(signal.get('data',[])); rows=[]; previous=None
                 for symbol in signal['wave']:
                     if symbol in '=2345' and 'data' in signal: previous=next(data)
                     elif symbol!='.': previous=symbol
                     rows.append(previous)
                 values[signal['name']]=rows[1:7] # index zero is unconstrained initial state
-            keys=('rst_ni','state_valid','dev','prod_end','secrets','observed_debug','bad')
-            widths=(1,1,1,1,4,4,1)
+            keys=('rst_ni','state_valid','dev','prod_end','secrets','fsm','observed_debug','observed_clear','bad')
+            widths=(1,1,1,1,4,16,4,4,1)
             rows=[]
             for i in range(6):
                 row=''
@@ -85,7 +90,7 @@ def main():
             witness=out/(mode+'.mem');witness.write_text('\n'.join(rows)+'\n')
             obj=out/('obj-'+mode)
             run('build-'+mode,['verilator','--binary','--timing','--assert','--top-module','opentitan_debug_replay',
-                '--timescale','1ns/1ps','--Mdir',str(obj),'-GBAD_GRANT='+str(int(mode=='fault')),
+                '--timescale','1ns/1ps','--Mdir',str(obj),'-GBAD_GRANT='+str(int(mode=='fault')), '-GBAD_CLEAR='+str(int(mode=='clear-fault')),
                 '-I'+str(include)]+list(map(str,files))+[str(repo/'fixtures/opentitan_debug_replay.sv')])
             log=run('replay-'+mode,[str(obj/'Vopentitan_debug_replay'),'+WITNESS='+str(witness)])
             if 'PASS: six-step witness replay' not in log: raise ValueError('missing replay completion')
@@ -100,7 +105,7 @@ def main():
                     raise ValueError('negative replay did not fail at expected comparison')
         if subprocess.check_output(['git','status','--porcelain'],cwd=root,text=True):
             raise ValueError('application tree changed')
-        print('PASS: six-step scoped property, reachable On/Off, and injected counterexample replayed; not signoff')
+        print('PASS: six-step scoped property, reachable On/Off with clear, and both injected counterexamples replayed; not signoff')
         return 0
     except (OSError,ValueError,KeyError,IndexError,StopIteration,subprocess.SubprocessError) as error:
         print(str(error),file=sys.stderr);return 1

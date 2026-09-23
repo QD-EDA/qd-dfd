@@ -1,5 +1,9 @@
 # OpenTitan debug-enable bounded proof
 
+Historical initial slice: the current runner extends this scope as described in
+[FSM boundary evidence](FSM_BOUNDARY_EVIDENCE.md). The Idle-only results below
+record the original pilot.
+
 This optional pilot checks the unchanged `lc_ctrl_signal_decode` hardware and its
 real generic sender flops at OpenTitan commit
 `7a3ad34b6d483f4d1d69ac670ddb1c45f1172e19`. It does not change the VCD checker.

@@ -80,9 +80,12 @@ cases, independent oracles, performance targets and release gates.
 
 `python3 run_opentitan_debug_formal.py /path/to/clean/opentitan /tmp/qd-dfd-formal`
 checks six steps of the real OpenTitan lifecycle decoder's registered hardware
-debug-enable output, with DEV/PROD/PROD_END inputs and the FSM held at IdleSt.
-It requires Yosys with `read_slang` and Verilator, covers both On and Off, rejects
-an injected grant, and independently replays SAT witnesses. See
+debug-enable output, with DEV/PROD/PROD_END inputs and arbitrary binary 16-bit FSM inputs.
+It requires Yosys with `read_slang` and Verilator, covers post-transition and invalid-FSM debug clearing, rejects
+an injected grant and suppressed clear, and independently replays SAT witnesses. See
 [LIFECYCLE_FORMAL_EVIDENCE.md](LIFECYCLE_FORMAL_EVIDENCE.md) for the pinned design,
 commands, assumptions and unsupported cases. This optional pilot is separate
 from the VCD CLI and does not establish full lifecycle reachability or signoff.
+
+The expanded FSM property and exact limits are documented in
+[FSM boundary evidence](FSM_BOUNDARY_EVIDENCE.md).
