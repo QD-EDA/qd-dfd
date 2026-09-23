@@ -1,5 +1,11 @@
 # QD-DFD
 
+## Product direction
+
+QD-DFD will both analyze hardware debug architecture and implement design-for-debug by inserting the necessary design elements into RTL or netlists for an explicitly supported scope. Debug access, observation/trace, registers and lifecycle controls are design outputs, alongside structural and reachable-state verification. The current executable only checks observed VCD policy; insertion is not implemented today.
+
+## Current prototype
+
 `qd-dfd` checks debug-lock policy against values observed in a VCD trace. It checks the supplied trace only; it cannot prove all reachable states or replace secure-debug signoff. A pass means only that the trace exercised the required policy clauses without observing a forbidden one.
 
 ## Requirements and quick start

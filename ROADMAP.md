@@ -1,4 +1,8 @@
-# QD-DFD: hardware debug architecture verification
+# QD-DFD: debug architecture analysis and design-for-debug implementation
+
+## Intended product (scope clarified 2026-09-23)
+
+QD-DFD will both analyze hardware debug architecture and implement design-for-debug by inserting the necessary design elements into RTL or netlists for an explicitly supported scope. Debug access, observation/trace, registers and lifecycle controls are design outputs, alongside structural and reachable-state verification. The current executable only checks observed VCD policy; insertion is not implemented today.
 
 ## Current capability
 
@@ -31,11 +35,25 @@ software security scanner or a secure-debug signoff product.
    unreachable exercise, counterexample, timeout and unbounded proof. Extend to
    register read/write visibility, lock persistence, test modes and trace enable
    transitions one architectural requirement at a time.
-4. **Production qualification:** only the named lifecycle states, endpoints,
+4. **DFD implementation:** consume an explicit debug architecture and endpoint
+   selection; insert the required observation points, debug registers/access
+   fabric, trigger/trace buffers and lifecycle/test-mode gating for that scope.
+   Start with one reviewed observation/register block before wider debug fabrics.
+   Emit separate derived RTL/netlists, register/interface descriptions, constraints
+   and a source-linked insertion manifest. Preserve normal-mode functional
+   behavior by equivalence checks under documented debug-disabled assumptions;
+   prove access/lock/reset properties with debug enabled and replay witnesses in
+   simulation. Check CDC/reset crossings introduced by debug infrastructure.
+   Do not infer an access policy from signal names or insert unrestricted bypasses.
+5. **Production qualification:** only the named lifecycle states, endpoints,
    register ranges, reset modes and properties in the qualified matrix. Require
    design-owner policy review, structural endpoint completeness and independently
    replayed counterexamples/covers. Analog attacks, debug timing side channels,
    unmodeled firmware and unbounded liveness remain outside the initial scope.
+   Require both analyzer evidence and correct generated architecture: complete
+   endpoint mapping, normal-mode equivalence, verified lifecycle access behavior,
+   synthesizable outputs and area/timing/trace-capacity budgets. Analysis-only
+   qualification does not complete the DFD product goal.
 
 ## Evidence and release criteria
 
@@ -43,10 +61,15 @@ software security scanner or a secure-debug signoff product.
   formal environment and optional VCD. Outputs: endpoint inventory, source-linked
   properties/assumptions, access matrix, proof status/bound, traces and vacuity
   report. Never collapse observed-trace PASS and reachable-state proof into one flag.
+  Insertion also consumes the approved debug architecture and emits derived design
+  sources/netlists, register maps, interfaces, constraints and transformation records.
 - Corpus: existing seven tests plus lifecycle encodings/invalid states, lock
   transitions, resets during access, lifecycle escalation, omitted endpoints,
   test bypass, hidden registers, missing trace enable, vector X/Z, VCD aliases,
   no reachable required exercise and timeout. Faults belong in QD fixtures.
+  Add original/transformed design pairs, lock/reset/trace faults in inserted
+  structures, disabled-debug equivalence, repeated-insertion policy and interface
+  integration regressions without changing golden application sources.
 - Oracles: upstream lifecycle/access specifications, independently reviewed
   properties, another solver/engine, and four-state simulation of every generated
   witness. Agreement on an incorrectly constrained environment is not proof.
@@ -55,6 +78,9 @@ software security scanner or a secure-debug signoff product.
   Scalar VCD CLI remains a distinct supported lane until vector work qualifies.
 - Targets: 1M trace changes <=30 s/512 MiB using streaming where needed; selected
   <=1k-flop cone bounded to 50 cycles <=10 min/4 GiB. Timeout is UNKNOWN, never pass.
+  Initial insertion target: 1k selected observation endpoints <=60 s/2 GiB,
+  excluding synthesis/proof time; report area, critical-path and trace-bandwidth
+  costs against architecture-specific budgets agreed before qualification.
 - Release: every selected endpoint and state appears in the policy matrix; every
   required cover has a witness; forbidden mutations are detected; no missing
   assumptions or unexplained independent-engine disagreements; two reproducible
@@ -64,8 +90,10 @@ software security scanner or a secure-debug signoff product.
 
 This is a staged plan, not a production qualification claim. No stage is earned
 by a green unit suite alone. Keep existing passing behavior and raw diagnostics.
-Do not change application RTL/DV, disable assertions, or introduce dummy VIP to
-make a pilot pass. A failed pilot is an artifact to retain, not a test to remove.
+Preserve the immutable application RTL/DV inputs. Intentional DFT/DFD insertion
+is authorized product work: emit a separate derived design with an explicit
+transformation manifest. Never edit the golden inputs, disable assertions or
+introduce dummy VIP merely to manufacture a passing pilot. A failed pilot is an artifact to retain, not a test to remove.
 
 Named pilot pins (full SHAs, never floating branches):
 - Caliptra RTL v2.1.2: `49370266d12cb0c4a8f71b3a0ff7e54ba7d4866e`, generic simulation primitives;
@@ -84,7 +112,8 @@ compare canonical findings and explain any nondeterminism. Archive the bundle
 with the release and publish a supported/unsupported configuration table.
 
 Review every expected finding and every oracle disagreement. Seed known defects
-in separate test fixtures and require their detection; never mutate pilot RTL.
+in separate test fixtures and require their detection; never alter golden pilot RTL to manufacture a pass. Derived insertion outputs
+are permitted and must be verified against the golden input and approved policy.
 Unknowns and exclusions remain counted and visible. Waivers require a stable
 finding/configuration identity, owner, independent reviewer, rationale, evidence
 hash/link, expiry, and revalidation on any relevant input change. A waiver is a
