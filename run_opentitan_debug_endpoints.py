@@ -123,8 +123,12 @@ def audit_texts(texts):
              for (name, instance, port, net), line in sorted(found.items())]
     unknown = [f'missing direct connection: {edge}' for edge in missing]
     unknown += [f'unreviewed direct connection: {edge}' for edge in extra]
-    pin_counts = Counter((name, instance, port) for name, text in texts.items()
-                         for instance, port, _, _ in connections(text))
+    pin_counts = Counter()
+    for name, text in texts.items():
+        for block in re.finditer(r'(?ms)^\s*\)\s*(\w+)\s*\(\s*(.*?)^\s*\);',
+                                 blank_comments(text)):
+            pin_counts.update((name, block.group(1), port) for port in
+                              re.findall(r'(?m)^\s*\.(\w+)\s*\(', block.group(2)))
     for name, instance, port, _ in sorted(EXPECTED):
         if pin_counts[name, instance, port] != 1:
             unknown.append(f'{name}: {instance}.{port} occurs {pin_counts[name, instance, port]} times')

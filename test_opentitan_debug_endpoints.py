@@ -113,7 +113,8 @@ endmodule
         self.assertTrue(any('default RvDmUseDmiInterface' in item for item in result['unknown']))
 
     def test_duplicate_reviewed_pin_is_unknown(self):
-        for duplicate in ('.jtag_i(pinmux_rv_jtag_req)', '.jtag_i(wrong_net)'):
+        for duplicate in ('.jtag_i(pinmux_rv_jtag_req)', '.jtag_i(wrong_net)',
+                          '.jtag_i(wrapper(wrong_net))'):
             with self.subTest(duplicate=duplicate):
                 changed = dict(self.texts)
                 changed['main'] = changed['main'].replace(
