@@ -112,6 +112,28 @@ endmodule
         self.assertEqual(result['status'], 'UNKNOWN')
         self.assertTrue(any('default RvDmUseDmiInterface' in item for item in result['unknown']))
 
+    def test_duplicate_reviewed_pin_is_unknown(self):
+        for duplicate in ('.jtag_i(pinmux_rv_jtag_req)', '.jtag_i(wrong_net)'):
+            with self.subTest(duplicate=duplicate):
+                changed = dict(self.texts)
+                changed['main'] = changed['main'].replace(
+                    '.jtag_i(pinmux_rv_jtag_req),',
+                    '.jtag_i(pinmux_rv_jtag_req),\n    ' + duplicate + ',')
+                result = audit_texts(changed)
+                self.assertEqual(result['status'], 'UNKNOWN')
+                self.assertTrue(any('u_rv_dm.jtag_i' in item for item in result['unknown']))
+
+    def test_duplicate_instance_or_wrong_module_is_unknown(self):
+        for changed_main in (
+            self.texts['main'].replace('  pinmux #(\n', '  bogus #(\n'),
+            self.texts['main'].replace('  rv_dm #(\n',
+                '  pinmux #(\n  ) u_pinmux (\n    .rv_jtag_o(pinmux_rv_jtag_req)\n  );\n  rv_dm #(\n'),
+        ):
+            with self.subTest(changed_main=changed_main):
+                result = audit_texts({**self.texts, 'main': changed_main})
+                self.assertEqual(result['status'], 'UNKNOWN')
+                self.assertTrue(any('u_pinmux' in item for item in result['unknown']))
+
     def test_missing_direct_consumer_is_unknown(self):
         self.texts['main'] = self.texts['main'].replace(
             '.lc_hw_debug_clr_i(lc_ctrl_lc_hw_debug_clr)',

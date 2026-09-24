@@ -2,6 +2,7 @@
 """Inventory direct Earlgrey debug connections at a pinned revision."""
 import hashlib
 import json
+from collections import Counter
 from pathlib import Path
 import re
 import subprocess
@@ -33,6 +34,18 @@ EXPECTED = {
     ('top', 'earlgrey_pd_aon', 'lc_ctrl_lc_hw_debug_en_i', 'lc_ctrl_lc_hw_debug_en'),
     ('aon', 'u_pwrmgr', 'lc_hw_debug_en_i', 'lc_ctrl_lc_hw_debug_en_i'),
     ('aon', 'u_clkmgr', 'lc_hw_debug_en_i', 'lc_ctrl_lc_hw_debug_en_i'),
+}
+MODULES = {
+    ('main', 'u_lc_ctrl'): 'lc_ctrl',
+    ('main', 'u_pinmux'): 'pinmux',
+    ('main', 'u_rv_dm'): 'rv_dm',
+    ('main', 'u_csrng'): 'csrng',
+    ('main', 'u_sram_ctrl_main'): 'sram_ctrl',
+    ('main', 'u_sram_ctrl_sec'): 'sram_ctrl',
+    ('top', 'earlgrey_pd_main'): 'earlgrey_pd_main',
+    ('top', 'earlgrey_pd_aon'): 'earlgrey_pd_aon',
+    ('aon', 'u_pwrmgr'): 'pwrmgr',
+    ('aon', 'u_clkmgr'): 'clkmgr',
 }
 
 
@@ -110,6 +123,17 @@ def audit_texts(texts):
              for (name, instance, port, net), line in sorted(found.items())]
     unknown = [f'missing direct connection: {edge}' for edge in missing]
     unknown += [f'unreviewed direct connection: {edge}' for edge in extra]
+    pin_counts = Counter((name, instance, port) for name, text in texts.items()
+                         for instance, port, _, _ in connections(text))
+    for name, instance, port, _ in sorted(EXPECTED):
+        if pin_counts[name, instance, port] != 1:
+            unknown.append(f'{name}: {instance}.{port} occurs {pin_counts[name, instance, port]} times')
+    for name, text in texts.items():
+        declarations = re.findall(r'(?ms)^\s*(\w+)\s*#\s*\([^;]*?^\s*\)\s*(\w+)\s*\(',
+                                  blank_comments(text))
+        for (file, instance), module in MODULES.items():
+            if file == name and [kind for kind, found in declarations if found == instance] != [module]:
+                unknown.append(f'{name}: {instance} must be one {module} instance')
     contracts, parameter_unknown = parameter_contracts(texts)
     unknown += parameter_unknown
     return {'status': 'resolved_bounded' if not unknown else 'UNKNOWN',
