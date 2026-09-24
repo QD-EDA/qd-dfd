@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inventory direct Earlgrey lc_hw_debug_en/clr connections at a pinned revision."""
+"""Inventory direct Earlgrey debug connections at a pinned revision."""
 import hashlib
 import json
 from pathlib import Path
@@ -18,8 +18,14 @@ EXPECTED = {
     ('main', 'u_lc_ctrl', 'lc_hw_debug_clr_o', 'lc_ctrl_lc_hw_debug_clr'),
     ('main', 'u_pinmux', 'lc_hw_debug_en_i', 'lc_ctrl_lc_hw_debug_en'),
     ('main', 'u_pinmux', 'lc_hw_debug_clr_i', 'lc_ctrl_lc_hw_debug_clr'),
+    ('main', 'u_pinmux', 'pinmux_hw_debug_en_o', 'pinmux_pinmux_hw_debug_en'),
+    ('main', 'u_pinmux', 'rv_jtag_o', 'pinmux_rv_jtag_req'),
+    ('main', 'u_pinmux', 'rv_jtag_i', 'pinmux_rv_jtag_rsp'),
     ('main', 'u_rv_dm', 'lc_hw_debug_en_i', 'lc_ctrl_lc_hw_debug_en'),
     ('main', 'u_rv_dm', 'lc_hw_debug_clr_i', 'lc_ctrl_lc_hw_debug_clr'),
+    ('main', 'u_rv_dm', 'pinmux_hw_debug_en_i', 'pinmux_pinmux_hw_debug_en'),
+    ('main', 'u_rv_dm', 'jtag_i', 'pinmux_rv_jtag_req'),
+    ('main', 'u_rv_dm', 'jtag_o', 'pinmux_rv_jtag_rsp'),
     ('main', 'u_csrng', 'lc_hw_debug_en_i', 'lc_ctrl_lc_hw_debug_en'),
     ('main', 'u_sram_ctrl_main', 'lc_hw_debug_en_i', 'lc_ctrl_lc_hw_debug_en'),
     ('main', 'u_sram_ctrl_sec', 'lc_hw_debug_en_i', 'lc_ctrl_lc_hw_debug_en'),
@@ -50,6 +56,43 @@ def connections(text):
     return result
 
 
+def parameter_contracts(texts):
+    """Check only the pinned default and named forwarding for RV_DM mode."""
+    contracts, unknown = [], []
+    for name, module in [('top', 'top_earlgrey'), ('main', 'earlgrey_pd_main')]:
+        clean = blank_comments(texts[name])
+        headers = list(re.finditer(r'(?ms)^\s*module\s+' + module +
+                                  r'\s*#\s*\((.*?)^\s*\)\s*\(', clean))
+        declarations = (list(re.finditer(r'(?m)^\s*parameter\s+bit\s+RvDmUseDmiInterface\s*=\s*0\s*,',
+                                        headers[0].group(1))) if len(headers) == 1 else [])
+        names = (re.findall(r'(?m)^\s*parameter\b[^\n]*\bRvDmUseDmiInterface\b',
+                            headers[0].group(1)) if len(headers) == 1 else [])
+        if len(declarations) == len(names) == 1:
+            line = clean.count('\n', 0, headers[0].start(1) + declarations[0].start()) + 1
+            contracts.append(dict(file=FILES[name], line=line,
+                                  contract='default RvDmUseDmiInterface = 0'))
+        else:
+            unknown.append(f'{name}: default RvDmUseDmiInterface = 0 not uniquely established')
+
+    for name, module, instance, port in [('top', 'earlgrey_pd_main', 'earlgrey_pd_main',
+                                         'RvDmUseDmiInterface'),
+                                        ('main', 'rv_dm', 'u_rv_dm', 'UseDmiInterface')]:
+        clean = blank_comments(texts[name])
+        blocks = list(re.finditer(r'(?ms)^\s*' + module + r'\s*#\s*\((.*?)^\s*\)\s*' +
+                                  instance + r'\s*\(', clean))
+        pins = (list(re.finditer(r'(?m)^\s*\.' + port + r'\s*\(\s*RvDmUseDmiInterface\s*\)\s*,?\s*$',
+                                 blocks[0].group(1))) if len(blocks) == 1 else [])
+        names = (re.findall(r'\.' + port + r'\s*\(', blocks[0].group(1))
+                 if len(blocks) == 1 else [])
+        if len(pins) == len(names) == 1:
+            line = clean.count('\n', 0, blocks[0].start(1) + pins[0].start()) + 1
+            contracts.append(dict(file=FILES[name], line=line,
+                                  contract=f'{instance}.{port} = RvDmUseDmiInterface'))
+        else:
+            unknown.append(f'{name}: {instance}.{port} forwarding not uniquely established')
+    return contracts, unknown
+
+
 def audit_texts(texts):
     """Audit the reviewed direct connections; report missing and added edges UNKNOWN."""
     found = {(name, edge[0], edge[1], edge[2]): edge[3] for name, text in texts.items()
@@ -58,7 +101,8 @@ def audit_texts(texts):
     missing = sorted(EXPECTED - found.keys())
     # Extra direct uses of these control nets extend the endpoint scope and need review.
     nets = {'lc_ctrl_lc_hw_debug_en', 'lc_ctrl_lc_hw_debug_clr',
-            'lc_ctrl_lc_hw_debug_en_i'}
+            'lc_ctrl_lc_hw_debug_en_i', 'pinmux_pinmux_hw_debug_en',
+            'pinmux_rv_jtag_req', 'pinmux_rv_jtag_rsp'}
     extra = sorted((name, *edge[:3]) for name, text in texts.items()
                    for edge in connections(text)
                    if edge[2] in nets and (name, *edge[:3]) not in EXPECTED)
@@ -66,8 +110,10 @@ def audit_texts(texts):
              for (name, instance, port, net), line in sorted(found.items())]
     unknown = [f'missing direct connection: {edge}' for edge in missing]
     unknown += [f'unreviewed direct connection: {edge}' for edge in extra]
+    contracts, parameter_unknown = parameter_contracts(texts)
+    unknown += parameter_unknown
     return {'status': 'resolved_bounded' if not unknown else 'UNKNOWN',
-            'edges': edges, 'unknown': unknown}
+            'edges': edges, 'contracts': contracts, 'unknown': unknown}
 
 
 def main():
@@ -87,7 +133,7 @@ def main():
         sources = {name: {'path': path, 'sha256': hashlib.sha256(raw[name]).hexdigest()}
                    for name, path in FILES.items()}
         report = {'schema_version': 1, 'opentitan_revision': revision,
-                  'scope': 'direct named-port connections for lc_hw_debug_en/clr in Earlgrey top, main and AON wrappers',
+                  'scope': 'direct named-port debug connections and default RV_DM mode in Earlgrey top, main and AON wrappers',
                   'sources': sources, **result}
         report_path.parent.mkdir(parents=True, exist_ok=True)
         report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
