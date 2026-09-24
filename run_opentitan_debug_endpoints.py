@@ -133,10 +133,14 @@ def audit_texts(texts):
         if pin_counts[name, instance, port] != 1:
             unknown.append(f'{name}: {instance}.{port} occurs {pin_counts[name, instance, port]} times')
     for name, text in texts.items():
-        declarations = re.findall(r'(?ms)^\s*(\w+)\s*#\s*\([^;]*?^\s*\)\s*(\w+)\s*\(',
-                                  blank_comments(text))
+        clean = blank_comments(text)
         for (file, instance), module in MODULES.items():
-            if file == name and [kind for kind, found in declarations if found == instance] != [module]:
+            if file != name:
+                continue
+            parameterized = re.findall(r'(?ms)^[ \t]*(\w+)[ \t]*#\s*\([^;]*?^\s*\)\s*' +
+                                       instance + r'\s*\(', clean)
+            plain = re.findall(r'(?m)^[ \t]*(\w+)\s+' + instance + r'\s*\(', clean)
+            if parameterized + plain != [module]:
                 unknown.append(f'{name}: {instance} must be one {module} instance')
     contracts, parameter_unknown = parameter_contracts(texts)
     unknown += parameter_unknown
