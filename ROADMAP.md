@@ -2,7 +2,7 @@
 
 ## Intended product (scope clarified 2026-09-23)
 
-QD-DFD will both analyze hardware debug architecture and implement design-for-debug by inserting the necessary design elements into RTL or netlists for an explicitly supported scope. Debug access, observation/trace, registers and lifecycle controls are design outputs, alongside structural and reachable-state verification. The current executable only checks observed VCD policy; insertion is not implemented today.
+QD-DFD will both analyze hardware debug architecture and implement design-for-debug by inserting the necessary design elements into RTL or netlists for an explicitly supported scope. Debug access, observation/trace, registers and lifecycle controls are design outputs, alongside structural and reachable-state verification. The CLI checks observed VCD policy; separate bounded proof and structural inventory scripts cover selected OpenTitan cones. Insertion is not implemented today.
 
 ## Commercial replacement objective
 
@@ -17,26 +17,44 @@ one inserted observation block cannot complete the product goal.
 
 ## Current capability
 
-Baseline `28883fb7413e3e02452429d34b5c913fbb45bd3b`: seven Python tests;
-CI runs `python3 -m unittest -v`. Scalar VCD observations are checked against
-required and forbidden combinations with timestamp/X/Z/vacuity diagnostics.
-It samples final values per timestamp, not delta ordering, and has no structural
-or reachability proof. This is hardware design verification, not a generic
-software security scanner or a secure-debug signoff product.
+The baseline `28883fb7413e3e02452429d34b5c913fbb45bd3b` had seven Python
+tests. Current CI runs 23 tests with `python3 -m unittest -v`; optional chip
+pilots are local lanes, not CI gates. The VCD CLI checks scalar and declared-width
+vector roles (1–4096 bits) against required and forbidden combinations, with
+timestamp, X/Z and vacuity diagnostics. It samples final values per timestamp,
+not delta ordering. A pinned OpenTitan package-function pilot checks all 16
+binary lifecycle encodings with an independent truth table and QD-only fault.
+
+Separate optional scripts check six steps of the pinned lifecycle decoder's
+registered debug-enable and debug-clear outputs with cover/fault witness replay,
+and inventory 19 reviewed direct Earlgrey debug/JTAG connections plus four
+default/forwarding contracts with source locations. The inventory returns UNKNOWN
+for missing, changed, duplicate or unsupported reviewed connections. A ten-step
+retained DMI permission SAT cone has no counterexample under its assumptions,
+but simulator replay is blocked and the runner returns UNKNOWN. None of these
+checks establishes complete hierarchy, legal lifecycle reachability, register
+access safety or generated DFD structure. This is hardware design verification,
+not a generic software security scanner or a secure-debug signoff product.
 
 ## Stages and interfaces
 
-1. **Next useful slice:** width-aware lifecycle values and a reviewed architectural
-   policy mapping. OpenTitan lifecycle enables are encoded multi-bit values;
-   treating them as booleans is insufficient. Inputs: immutable RTL hierarchy,
-   register map, policy and trace. Outputs: exercised/unexercised policy clauses,
-   precise path/width/value/timestamp evidence and UNKNOWN for missing mappings.
-   Preserve scalar policy compatibility and fail decisive X/Z observations.
-2. **Pinned pilot:** OpenTitan `lc_ctrl` lifecycle decode and debug/TAP isolation
-   cones, then Caliptra `soc_ifc` debug lock and JTAG integration. Enumerate real
+1. **Next useful slice:** complete a reviewed architectural policy mapping from
+   the pinned default Earlgrey lifecycle/debug controls through pinmux and RV_DM
+   to one selected access endpoint. Width-aware lifecycle trace checking and a
+   source-linked direct-connection inventory now exist, but neither establishes
+   the intervening gates or reachable access behavior. Inputs: immutable RTL
+   hierarchy, register map, policy and optional trace. Outputs: exercised and
+   unexercised clauses, path/width/value/timestamp evidence, source-linked
+   endpoints and UNKNOWN for missing or unsupported mappings. Preserve scalar
+   policy compatibility and fail decisive X/Z observations.
+2. **Pinned pilot:** OpenTitan default Earlgrey `lc_ctrl` to pinmux to RV_DM
+   debug/TAP isolation and a selected register-access cone, then Caliptra
+   `soc_ifc` debug lock and JTAG integration. The current OpenTitan inventory
+   covers direct wiring and default `RvDmUseDmiInterface=0` contracts only;
+   external overrides and actual path reachability remain UNKNOWN. Enumerate
    access paths, register visibility, lock states, test modes and trace outputs
-   from each pinned architecture. Select a small cone and owner-reviewed reset/
-   transition assumptions. Missing traces or signal mappings block the pilot;
+   from each pinned architecture. Select owner-reviewed reset/transition
+   assumptions. Missing traces or mappings block the relevant pilot claim;
    do not infer a lock policy from signal names alone.
 3. **Structural and reachable evidence:** elaborate with an established frontend;
    connect lifecycle controls to every selected debug endpoint and identify
@@ -74,7 +92,7 @@ software security scanner or a secure-debug signoff product.
   report. Never collapse observed-trace PASS and reachable-state proof into one flag.
   Insertion also consumes the approved debug architecture and emits derived design
   sources/netlists, register maps, interfaces, constraints and transformation records.
-- Corpus: existing seven tests plus lifecycle encodings/invalid states, lock
+- Corpus: current 23 Python tests plus lifecycle encodings/invalid states, lock
   transitions, resets during access, lifecycle escalation, omitted endpoints,
   test bypass, hidden registers, missing trace enable, vector X/Z, VCD aliases,
   no reachable required exercise and timeout. Faults belong in QD fixtures.
