@@ -131,6 +131,8 @@ endmodule
                 '  pinmux #(\n  ) u_pinmux (\n    .rv_jtag_o(pinmux_rv_jtag_req)\n  );\n  rv_dm #(\n'),
             self.texts['main'].replace('  rv_dm #(\n',
                 '  pinmux u_pinmux (.scanmode_i(scanmode_i));\n  rv_dm #(\n'),
+            self.texts['main'].replace('  );\n  rv_dm #(\n',
+                '  ); pinmux u_pinmux ();\n  rv_dm #(\n'),
             self.texts['main'].replace('  pinmux #(\n', '  bogus u_pinmux ();\n  pinmux #(\n'),
         ):
             with self.subTest(changed_main=changed_main):

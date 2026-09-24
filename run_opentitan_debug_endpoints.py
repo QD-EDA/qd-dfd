@@ -140,7 +140,8 @@ def audit_texts(texts):
             parameterized = re.findall(r'(?ms)^[ \t]*(\w+)[ \t]*#\s*\([^;]*?^\s*\)\s*' +
                                        instance + r'\s*\(', clean)
             plain = re.findall(r'(?m)^[ \t]*(\w+)\s+' + instance + r'\s*\(', clean)
-            if parameterized + plain != [module]:
+            if (len(re.findall(r'\b' + re.escape(instance) + r'\s*\(', clean)) != 1 or
+                    parameterized + plain != [module]):
                 unknown.append(f'{name}: {instance} must be one {module} instance')
     contracts, parameter_unknown = parameter_contracts(texts)
     unknown += parameter_unknown
