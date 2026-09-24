@@ -24,6 +24,10 @@ through `earlgrey_pd_main.RvDmUseDmiInterface` and then
 source lines in the JSON report. Commented, duplicated, changed or missing
 contracts remain UNKNOWN. The checker does not detect an external parameter
 override or prove that JTAG traffic can reach an unlocked debug register.
+It also requires unique reviewed instance names, module types and pins, including
+same-line duplicates; unsupported syntax yields UNKNOWN. The conservative text
+scanner can reject a string literal containing a reviewed instance token, but
+the pinned source contains no such literal.
 
 ```sh
 python3 run_opentitan_debug_endpoints.py /path/to/clean/opentitan /tmp/lc-debug-endpoints.json
