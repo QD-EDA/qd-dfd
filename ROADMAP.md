@@ -18,7 +18,7 @@ one inserted observation block cannot complete the product goal.
 ## Current capability
 
 The baseline `28883fb7413e3e02452429d34b5c913fbb45bd3b` had seven Python
-tests. Current CI runs 23 tests with `python3 -m unittest -v`; optional chip
+tests. Current CI runs 28 tests with `python3 -m unittest -v`; optional chip
 pilots are local lanes, not CI gates. The VCD CLI checks scalar and declared-width
 vector roles (1–4096 bits) against required and forbidden combinations, with
 timestamp, X/Z and vacuity diagnostics. It samples final values per timestamp,
@@ -28,7 +28,8 @@ binary lifecycle encodings with an independent truth table and QD-only fault.
 Separate optional scripts check six steps of the pinned lifecycle decoder's
 registered debug-enable and debug-clear outputs with cover/fault witness replay,
 and inventory 19 reviewed direct Earlgrey debug/JTAG connections plus four
-default/forwarding contracts with source locations. The inventory returns UNKNOWN
+default/forwarding contracts and 11 conditional RV_DM JTAG-to-DMI source contracts,
+all with source locations. The inventory returns UNKNOWN
 for missing, changed, duplicate or unsupported reviewed connections. A ten-step
 retained DMI permission SAT cone has no counterexample under its assumptions,
 but simulator replay is blocked and the runner returns UNKNOWN. None of these
@@ -50,8 +51,9 @@ not a generic software security scanner or a secure-debug signoff product.
 2. **Pinned pilot:** OpenTitan default Earlgrey `lc_ctrl` to pinmux to RV_DM
    debug/TAP isolation and a selected register-access cone, then Caliptra
    `soc_ifc` debug lock and JTAG integration. The current OpenTitan inventory
-   covers direct wiring and default `RvDmUseDmiInterface=0` contracts only;
-   external overrides and actual path reachability remain UNKNOWN. Enumerate
+   covers direct wiring, default `RvDmUseDmiInterface=0` contracts and guarded
+   RV_DM source statements; external overrides, `DMIDirectTAP` selection and
+   actual path reachability remain UNKNOWN. Enumerate
    access paths, register visibility, lock states, test modes and trace outputs
    from each pinned architecture. Select owner-reviewed reset/transition
    assumptions. Missing traces or mappings block the relevant pilot claim;
@@ -92,7 +94,7 @@ not a generic software security scanner or a secure-debug signoff product.
   report. Never collapse observed-trace PASS and reachable-state proof into one flag.
   Insertion also consumes the approved debug architecture and emits derived design
   sources/netlists, register maps, interfaces, constraints and transformation records.
-- Corpus: current 23 Python tests plus lifecycle encodings/invalid states, lock
+- Corpus: current 28 Python tests plus lifecycle encodings/invalid states, lock
   transitions, resets during access, lifecycle escalation, omitted endpoints,
   test bypass, hidden registers, missing trace enable, vector X/Z, VCD aliases,
   no reachable required exercise and timeout. Faults belong in QD fixtures.

@@ -93,8 +93,11 @@ The expanded FSM property and exact limits are documented in
 `python3 run_opentitan_debug_endpoints.py ROOT REPORT.json` inventories the
 pinned Earlgrey direct connections from `lc_hw_debug_en` and `lc_hw_debug_clr`
 to selected consumer ports, plus the default pinmux-to-RV_DM debug/JTAG path.
-It checks the two wrapper defaults and RV_DM parameter forwarding. Missing or
-newly added wiring remains UNKNOWN.
+It checks the two wrapper defaults and RV_DM parameter forwarding, plus 11
+conditional source contracts through the RV_DM JTAG TAP to the `dm_top` DMI
+request port. Missing or newly added wiring remains UNKNOWN. The selected
+implementation is UNKNOWN until external parameter overrides and preprocessor
+defines, especially `DMIDirectTAP`, are pinned.
 See [endpoint evidence](DEBUG_ENDPOINT_EVIDENCE.md); this is source inventory,
 not hierarchy elaboration or an architecture proof.
 

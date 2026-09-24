@@ -24,6 +24,16 @@ through `earlgrey_pd_main.RvDmUseDmiInterface` and then
 source lines in the JSON report. Commented, duplicated, changed or missing
 contracts remain UNKNOWN. The checker does not detect an external parameter
 override or prove that JTAG traffic can reach an unlocked debug register.
+The source inventory also checks 11 conditional contracts in the unchanged
+`hw/ip/rv_dm/rtl/rv_dm.sv`: pinmux enable synchronization, separate strict JTAG
+input/output gates, strict DMI enable, JTAG clock/reset muxes, TAP ingress and
+request wiring, gated DMI request/response handshakes, and the request port on
+`dm_top`. The mux, TAP and DMI handshake statements must remain under
+`` `ifndef DMIDirectTAP``. A changed or duplicated contract returns UNKNOWN.
+`implementation_selection` is always UNKNOWN because this source scan does not
+read build defines or external parameter overrides. These checks establish
+reviewed source statements, not an elaborated or reachable debug path.
+
 It also requires unique reviewed instance names, module types and pins, including
 same-line duplicates; unsupported syntax yields UNKNOWN. The conservative text
 scanner can reject a string literal containing a reviewed instance token, but
@@ -31,7 +41,7 @@ the pinned source contains no such literal.
 
 ```sh
 python3 run_opentitan_debug_endpoints.py /path/to/clean/opentitan /tmp/lc-debug-endpoints.json
-python3 -m unittest -v test_opentitan_debug_endpoints
+python3 -m unittest -v test_opentitan_debug_endpoints test_rv_dm_path
 ```
 
 Tests cover the positive expected wiring, a missing/miswired direct consumer, and
@@ -42,7 +52,18 @@ pinned checkout, the updated pilot reports 19 edges and four contracts with no
 unknowns. Its input is read-only; this is structural source evidence only.
 Duplicate pins with the same or conflicting nets, duplicate instances, and a
 changed module type are negative regression cases.
-The checker recognizes only direct named connections in these three files; it
+The RV_DM regression adds changed strict gates, a changed DMI endpoint,
+duplicate contracts, a duplicate `dm_top`, branch drift, changed preprocessor
+guard, an unexpected nested preprocessor directive, and a source byte mutation
+during the scan. A post-scan check records HEAD, git status and all four file
+hashes; drift returns UNKNOWN and exit 2 with the report retained. On the pinned checkout,
+the source scan reports 19 edges, four wrapper contracts and 11 conditional
+RV_DM contracts; `implementation_selection` remains UNKNOWN. The local run used
+Python 3.14.7 on Darwin arm64 and took 0.34 s with 21.9 MiB maximum resident
+memory (`/usr/bin/time -l`). The workspace evidence bundle at
+`evidence/dfd-rv-dmi-source-2026-09-24/report.json` records all four file hashes
+and source lines. No RTL or DV input was changed.
+The checker recognizes only reviewed connections and statements in these four files; it
 does not elaborate hierarchy, follow combinational logic, enumerate downstream
 debug gates or prove endpoint completeness beyond the pinned reviewed list. It
 does not establish lifecycle policy correctness or debug-access safety.
