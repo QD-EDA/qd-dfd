@@ -110,3 +110,7 @@ and Verilator. The observed Verilator UNOPTFLAT failure blocks witness replay:
 this pilot returns 2 (UNKNOWN), preserving the diagnostic. Other errors return
 1; zero would mean all scoped checks and replays completed, not qualification.
 See [DMI evidence](DMI_PERMISSION_EVIDENCE.md) for commands, scope and blockers.
+
+## Status
+
+Active prototype, Sep 2026.
