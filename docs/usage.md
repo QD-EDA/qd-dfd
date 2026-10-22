@@ -69,11 +69,11 @@ The checkout must be `7a3ad34b6d483f4d1d69ac670ddb1c45f1172e19`. The harness
 compiles the real packages, checks the function's truth table, generates VCD,
 and requires rejection of a QD-harness grant fault. The legacy `lock` role names
 the encoded input in this fixture; it is not a claim about a real lock register.
-[Evidence](VECTOR_EVIDENCE.md) records versions and limits. Default CI covers
+[Evidence](../VECTOR_EVIDENCE.md) records versions and limits. Default CI covers
 Python regressions; it does not run the optional simulator pilot. Full lifecycle reachable-state
 proof, debug-structure insertion and full-chip qualification remain roadmap work.
 
-See [the staged qualification roadmap](ROADMAP.md) for named pilots, unsupported
+See [the staged qualification roadmap](../ROADMAP.md) for named pilots, unsupported
 cases, independent oracles, performance targets and release gates.
 
 ## Optional hardware bounded proof
@@ -83,12 +83,12 @@ checks six steps of the real OpenTitan lifecycle decoder's registered hardware
 debug-enable output, with DEV/PROD/PROD_END inputs and arbitrary binary 16-bit FSM inputs.
 It requires Yosys with `read_slang` and Verilator, covers post-transition and invalid-FSM debug clearing, rejects
 an injected grant and suppressed clear, and independently replays SAT witnesses. See
-[LIFECYCLE_FORMAL_EVIDENCE.md](LIFECYCLE_FORMAL_EVIDENCE.md) for the pinned design,
+[LIFECYCLE_FORMAL_EVIDENCE.md](../LIFECYCLE_FORMAL_EVIDENCE.md) for the pinned design,
 commands, assumptions and unsupported cases. This optional pilot is separate
 from the VCD CLI and does not establish full lifecycle reachability or signoff.
 
 The expanded FSM property and exact limits are documented in
-[FSM boundary evidence](FSM_BOUNDARY_EVIDENCE.md).
+[FSM boundary evidence](../FSM_BOUNDARY_EVIDENCE.md).
 
 `python3 run_opentitan_debug_endpoints.py ROOT REPORT.json` inventories the
 pinned Earlgrey direct connections from `lc_hw_debug_en` and `lc_hw_debug_clr`
@@ -98,7 +98,7 @@ conditional source contracts through the RV_DM JTAG TAP to the `dm_top` DMI
 request port. Missing or newly added wiring remains UNKNOWN. The selected
 implementation is UNKNOWN until external parameter overrides and preprocessor
 defines, especially `DMIDirectTAP`, are pinned.
-See [endpoint evidence](DEBUG_ENDPOINT_EVIDENCE.md); this is source inventory,
+See [endpoint evidence](../DEBUG_ENDPOINT_EVIDENCE.md); this is source inventory,
 not hierarchy elaboration or an architecture proof.
 
 ## Retained DMI permission pilot
@@ -109,7 +109,7 @@ ten steps of its retained DMI permission. It needs PyYAML, Yosys with read_slang
 and Verilator. The observed Verilator UNOPTFLAT failure blocks witness replay:
 this pilot returns 2 (UNKNOWN), preserving the diagnostic. Other errors return
 1; zero would mean all scoped checks and replays completed, not qualification.
-See [DMI evidence](DMI_PERMISSION_EVIDENCE.md) for commands, scope and blockers.
+See [DMI evidence](../DMI_PERMISSION_EVIDENCE.md) for commands, scope and blockers.
 
 ## Status
 
